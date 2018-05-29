@@ -39,35 +39,51 @@ function startApp() {
             }
         });
     }
-    // inquire for: item name, category, starting bid
     //then create function to add item to DB
     function postAuction() {
-        console.log("Inserting a new bid...\n");
-        var query = connection.query(
-            "INSERT INTO auctions SET ?", {
-                item_name: "Nintendo Switch",
-                category: "Video Games",
-                starting_bid: 0,
-                highest_bid: 0
+        // inquire for: item name, category, starting bid
+        inquirer.prompt([
+            {
+              name: "item",
+              type: "input",
+              message: "What is the item you would like to submit?"
             },
-            function (err, res) {
-                console.log(res.affectedRows + " product inserted!\n");
-                readProducts();
+            {
+                name: "category",
+                type: "input",
+                message: "What category would you like to place your auction?"
+            },
+            {
+              name: "startingBid",
+              type: "input",
+              message: "What would you like your starting bid to be?",
+              valida: function(value) {
+                  if(isNaN(value) === false) {
+                      return true;
+                  }
+                  return false;
+                }
+            }     
+    ])
+    .then(function(answer) {
+        // when finished prompting, insert a new item into the db with that info
+        connection.query(
+            "INSERT INTO auctions SET ?", {
+                item_name: answer.item,
+                category: answer.category,
+                starting_bid: answer.startingBid,
+                highest_bid: answer.startingBid
+            },
+            function (err) {
+                if (err) throw err;
+                console.log("Your auction was created successfully!");
+                //once function is complete, re-prompt user input for bid or post
+                startApp();
             }
         );
+    });
+}
 
-        console.log(query.sql);
-    }
-
-    function readProducts() {
-        console.log("Selecting all products..\n");
-        connection.query("SELECT * FROM auctions", function (err, res) {
-            if (err) throw err;
-            console.log(res);
-            connection.end();
-        });
-    };
-    
 // if bidding, update function
 //read items from DB
 //use inquire to show list in order for user to select on item to bid
