@@ -84,14 +84,62 @@ function startApp() {
     });
 }
 
-// if bidding, update function
-//read items from DB
-//use inquire to show list in order for user to select on item to bid
-//after deciding, inquire on bid
-//update highest bid column for specific item
-
-// return message: "Your item has been posted!"
-
-//or
-
-// return message:  "You are the highest bidder!" or "Sorry, bro, try again!"
+function bidAuction() {
+    //read items from the database
+    connection.query("SELECT * FROM auctions", function(err, results) {
+        if (err) throw err;
+        //use inquirer to show list in order for user to select on item to bid
+        inquirer.prompt([
+            {
+             name: "choice",
+             type: "rawlist",
+             choices: function() {
+                 var choiceArray = [];
+                 for (var i = 0; i < results.length; i++) {
+                     choiceArray.push(results[i].item_name);
+                 }
+                 return choiceArray;
+             },
+             message: "What auction would you like to place a bid in?"   
+            },
+            {
+            name: "bid",
+            type: "input",
+            message: "How much would you like to bid?"
+            }
+        ])
+        .then(function(answer) {
+            // get the information of the item chosen
+            var chosenItem;
+            for (var i = 0; i < results.length; i++) {
+                if (results[i].item_name === answer.choice) {
+                    chosenItem = results[i];
+                }
+            }
+            // determine if bid was high enough
+            if (chosenItem.highest_bid < parseInt(answer.bid)) {
+                // bid was high enough, so update db, inform user, restart app
+                connection.query(
+                    "UPDATE auctions SET ? WHERE ?",
+                    [
+                        {
+                            highest_bid: answer.bid
+                        },
+                        {
+                            id: chosenItem.id
+                        }
+                    ],
+                    function(error) {
+                        if (error) throw err;
+                        console.log("Congratulations!  You are the highest bidder!");
+                        start();
+                    }
+                );
+            }
+            else {
+                // bid wasn't high enough, return message and restart app                console.log("Sorry, bro.  Try again!")
+                start();
+            }
+        });
+    });
+}
